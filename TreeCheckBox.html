@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>شجرة الاختيارات</title>
+  <style>
+    :root {
+      --primary-color: #4CAF50;
+      --hover-bg: #f5f5f5;
+    }
+
+    body {
+      margin: 20px;
+      background: #f8f9fa;
+    }
+
+    .tree-container {
+      font-family: 'Arial', sans-serif;
+      direction: rtl;
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    ul {
+      list-style: none;
+      padding-right: 25px;
+      margin: 0;
+    }
+
+    li {
+      margin: 8px 0;
+      position: relative;
+    }
+
+    li:before {
+      content: "";
+      position: absolute;
+      right: -15px;
+      top: 10px;
+      width: 10px;
+      height: 1px;
+      background: #ddd;
+    }
+
+    li:after {
+      content: "";
+      position: absolute;
+      right: -15px;
+      top: 0;
+      width: 1px;
+      height: 100%;
+      background: #ddd;
+    }
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    label:hover {
+      background: var(--hover-bg);
+    }
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--primary-color);
+    }
+  </style>
+</head>
+<body>
+  <div class="tree-container">
+    <ul id="tree"></ul>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      const treeData = {
+        name: "المنتجات",
+        selected: false,
+        children: [
+          {
+            name: "رجالي",
+            selected: false,
+            children: [
+              { name: "أحذية", selected: false },
+              { name: "ملابس", selected: false },
+            ],
+          },
+          {
+            name: "حريمي",
+            selected: false,
+            children: [
+              { name: "حقائب", selected: false },
+              { name: "فساتين", selected: false },
+            ],
+          },
+        ],
+      };
+
+      // إضافة خاصية parent لكل العقد
+      function addParentLinks(node, parent = null) {
+        node.parent = parent;
+        if (node.children) {
+          node.children.forEach(child => addParentLinks(child, node));
+        }
+      }
+
+      // تحديث حالة الوالدين
+      function updateParents(node) {
+        if (!node.parent) return;
+        
+        const allChildrenSelected = node.parent.children.every(c => c.selected);
+        node.parent.selected = allChildrenSelected;
+        
+        updateParents(node.parent);
+      }
+
+      // عرض الشجرة
+      function renderTree(node, container) {
+        const li = $('<li>');
+        const label = $('<label>');
+        const checkbox = $('<input>', {
+          type: 'checkbox',
+          class: 'node-checkbox'
+        }).prop('checked', node.selected);
+        
+        label.append(checkbox, node.name);
+        li.append(label);
+
+        if (node.children?.length) {
+          const ul = $('<ul>');
+          node.children.forEach(child => renderTree(child, ul));
+          li.append(ul);
+        }
+
+        container.append(li);
+      }
+
+      // إعادة تعيين الشجرة بالكامل
+      function refreshTree() {
+        $('#tree').empty();
+        renderTree(treeData, $('#tree'));
+      }
+
+      // معالجة أحداث التحديد
+      $('#tree').on('change', '.node-checkbox', function() {
+        const targetNode = findNodeByName(treeData, $(this).parent().text().trim());
+        targetNode.selected = $(this).prop('checked');
+        
+        // تحديث جميع العقد الفرعية
+        function updateChildren(node) {
+          if (node.children) {
+            node.children.forEach(child => {
+              child.selected = node.selected;
+              updateChildren(child);
+            });
+          }
+        }
+        
+        updateChildren(targetNode);
+        updateParents(targetNode);
+        refreshTree();
+      });
+
+      // البحث عن عقدة بالاسم
+      function findNodeByName(node, name) {
+        if (node.name === name) return node;
+        if (node.children) {
+          for (const child of node.children) {
+            const found = findNodeByName(child, name);
+            if (found) return found;
+          }
+        }
+        return null;
+      }
+
+      // التهيئة الأولية
+      addParentLinks(treeData);
+      refreshTree();
+    });
+  </script>
+</body>
+</html>
